@@ -5,7 +5,7 @@
 blueprint:
   source_url: https://github.com/erik73/blueprints/blob/main/zha_ikea_tradfri_styrbar_warmwhite.yaml
 
-  name: ZHA - IKEA TRADFRI - STYRBAR - Warm White Lights
+  name: ZHA - IKEA TRADFRI - STYRBAR - Preset Colors
 
   description: >-
     This automation simulates the use of the IKEA TRADFRI STYRBAR remote control
@@ -52,9 +52,8 @@ mode: restart
 max_exceeded: silent
 
 variables:
-  var_light: !input light
-  var_speed: !input speed
   var_preset: !input preset
+  var_speed: !input speed
 
 trigger:
   - platform: event
@@ -63,6 +62,17 @@ trigger:
       device_id: !input remote
 
 action:
+  # Select the last option of the preset if it is unknown.
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: !input preset
+            state: "unknown"
+        sequence:
+          - service: input_select.select_last
+            target:
+              entity_id: !input preset
+
   - choose:
       # Short-Press on the dim-up button.
       - conditions:
@@ -75,6 +85,8 @@ action:
           - service: light.turn_on
             target:
               entity_id: !input light
+            data:
+              transition: "{{ (var_speed / 1000)|float }}"
 
       # Long-Press on the dim-up button.
       - conditions:
@@ -121,49 +133,6 @@ action:
                 - delay:
                     milliseconds: !input speed
 
-      # Short-Press on the left button.
-      - conditions:
-          - condition: template
-            value_template: '{{ trigger.event.data.command == "press" }}'
-          - condition: template
-            value_template: "{{ trigger.event.data.args == [257,13,0] }}"
-        sequence:
-          - service: input_select.select_previous
-            target:
-              entity_id: !input preset
-            data:
-              cycle: true
-          - service: light.turn_on
-            target:
-              entity_id: !input light
-            data:
-              transition: "{{ (var_speed / 1000)|float }}"
-              hs_color: "{{ states(var_preset) }}"
-
-      # Long-Press on the left button.
-      - conditions:
-          - condition: template
-            value_template: '{{ trigger.event.data.command == "hold" }}'
-          - condition: template
-            value_template: "{{ trigger.event.data.args == [3329,0] }}"
-        sequence:
-          - repeat:
-              while: []
-              sequence:
-                - service: light.turn_on
-                  target:
-                    entity_id: !input light
-                  data:
-                    color_temp: >-
-                      {% if state_attr(var_light, "color_temp") + 18 > 500 %}
-                        {{ 500 }}
-                      {% else %}
-                        {{ state_attr(var_light, "color_temp") + 18 }}
-                      {% endif %}
-                    transition: "{{ (var_speed / 1000)|float }}"
-                - delay:
-                    milliseconds: !input speed
-
       # Short-Press on the right button.
       - conditions:
           - condition: template
@@ -181,7 +150,7 @@ action:
               entity_id: !input light
             data:
               transition: "{{ (var_speed / 1000)|float }}"
-              hs_color: "{{ states(var_preset) }}"
+              color_temp: "{{ states(var_preset) }}"
 
       # Long-Press on the right button.
       - conditions:
@@ -193,17 +162,60 @@ action:
           - repeat:
               while: []
               sequence:
+                - service: input_select.select_next
+                  target:
+                    entity_id: !input preset
+                  data:
+                    cycle: true
                 - service: light.turn_on
                   target:
                     entity_id: !input light
                   data:
-                    color_temp: >-
-                      {% if state_attr(var_light, "color_temp") - 18 < 153 %}
-                        {{ 153 }}
-                      {% else %}
-                        {{ state_attr(var_light, "color_temp") - 18 }}
-                      {% endif %}
                     transition: "{{ (var_speed / 1000)|float }}"
+                    color_temp: "{{ states(var_preset) }}"
+                - delay:
+                    milliseconds: !input speed
+
+      # Short-Press on the left button.
+      - conditions:
+          - condition: template
+            value_template: '{{ trigger.event.data.command == "press" }}'
+          - condition: template
+            value_template: "{{ trigger.event.data.args == [257,13,0] }}"
+        sequence:
+          - service: input_select.select_previous
+            target:
+              entity_id: !input preset
+            data:
+              cycle: true
+          - service: light.turn_on
+            target:
+              entity_id: !input light
+            data:
+              transition: "{{ (var_speed / 1000)|float }}"
+              color_temp: "{{ states(var_preset) }}"
+
+      # Long-Press on the left button.
+      - conditions:
+          - condition: template
+            value_template: '{{ trigger.event.data.command == "hold" }}'
+          - condition: template
+            value_template: "{{ trigger.event.data.args == [3329,0] }}"
+        sequence:
+          - repeat:
+              while: []
+              sequence:
+                - service: input_select.select_previous
+                  target:
+                    entity_id: !input preset
+                  data:
+                    cycle: true
+                - service: light.turn_on
+                  target:
+                    entity_id: !input light
+                  data:
+                    transition: "{{ (var_speed / 1000)|float }}"
+                    color_temp: "{{ states(var_preset) }}"
                 - delay:
                     milliseconds: !input speed
 
