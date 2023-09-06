@@ -64,6 +64,9 @@ mode: restart
 max_exceeded: silent
 trigger:
 - platform: state
+  alias: currentprice
+  entity_id: !input tibber_price_sensor
+- platform: state
   alias: price
   entity_id: !input tibber_price_sensor
   attribute: price_level
@@ -84,6 +87,7 @@ action:
     price_changed: "{{ trigger.alias == 'price' }}"
     price_level: "{{ state_attr(price,'price_level') }}"
     price_is_low: "{{ price_level in levels and levels.index(price_level) <= levels.index(price_threshold) }}"
+    price_is_below_theshhold: "{{ states(price)|float <= states(pricepoint)|float }}"
     thermostat: !input thermostat
     thermostat_changed: "{{ trigger.alias == 'thermostat' }}"
     pricepoint: !input pricepoint
@@ -119,6 +123,33 @@ action:
         - "{{ trigger.to_state.state|float > states(pricepoint)|float }}"
         - "{{ trigger.from_state.state|float <= states(pricepoint)|float }}"
         - "{{ price_is_low }}"
+      - condition: and
+        conditions: 
+        - "{{ price_changed }}"
+        - "{{ levels.index(trigger.to_state.attributes.price_level) > levels.index(price_threshold) }}"
+        - "{{ levels.index(trigger.from_state.attributes.price_level) <= levels.index(price_threshold) }}"
+        - "{{ temperature_is_low }}"
+        - "{{ price_is_below_theshhold }}"
+      - condition: and
+        conditions:
+        - "{{ temperature_changed }}"
+        - "{{ trigger.to_state.state|float < states(thermostat)|float }}"
+        - "{{ trigger.from_state.state|float >= states(thermostat)|float }}"
+        - "{{ price_is_below_theshhold }}"
+      - condition: and
+        conditions:
+        - "{{ thermostat_changed }}"
+        - "{{ trigger.to_state.state|float > states(temperature)|float }}"
+        - "{{ trigger.from_state.state|float <= states(temperature)|float }}"
+        - "{{ price_is_below_theshhold }}"
+      - condition: and
+        conditions:
+        - "{{ pricepoint_changed }}"
+        - "{{ trigger.to_state.state|float > states(pricepoint)|float }}"
+        - "{{ trigger.from_state.state|float <= states(pricepoint)|float }}"
+        - "{{ price_is_below_theshhold }}"
+
+
     sequence: !input below_actions
   - conditions:
     - condition: or
