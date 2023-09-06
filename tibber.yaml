@@ -72,7 +72,7 @@ trigger:
   entity_id: !input thermostat
 - platform: state
   alias: pricepoint
-  entity_id: !input princepoint
+  entity_id: !input pricepoint
 - platform: state
   alias: temperature
   entity_id: !input temperature_sensor
