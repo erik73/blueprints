@@ -86,7 +86,7 @@ action:
     price_is_low: "{{ price_level in levels and levels.index(price_level) <= levels.index(price_threshold) }}"
     thermostat: !input thermostat
     thermostat_changed: "{{ trigger.alias == 'thermostat' }}"
-    pricepoint: !input pricepoint
+    pricepoint_changed: !input pricepoint
     pricepoint_changed: "{{ trigger.alias == 'pricepoint' }}"
     temperature: !input temperature_sensor
     temperature_changed: "{{ trigger.alias == 'temperature' }}"
