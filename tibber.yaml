@@ -84,11 +84,11 @@ action:
     price_changed: "{{ trigger.alias == 'price' }}"
     price_level: "{{ state_attr(price,'price_level') }}"
     price_is_low: "{{ price_level in levels and levels.index(price_level) <= levels.index(price_threshold) }}"
-    price_is_below_threshold: "{{ states(price)|float <= states(pricepoint)|float }}"
     thermostat: !input thermostat
     thermostat_changed: "{{ trigger.alias == 'thermostat' }}"
     pricepoint: !input pricepoint
     pricepoint_changed: "{{ trigger.alias == 'pricepoint' }}"
+    price_is_below_threshold: "{{ states(price)|float <= states(pricepoint)|float }}"
     temperature: !input temperature_sensor
     temperature_changed: "{{ trigger.alias == 'temperature' }}"
     temperature_is_low: "{{ states(temperature)|float < states(thermostat)|float }}"
