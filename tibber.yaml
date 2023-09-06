@@ -144,9 +144,8 @@ action:
         - "{{ pricepoint_changed }}"
         - "{{ trigger.to_state.state|float > states(pricepoint)|float }}"
         - "{{ trigger.from_state.state|float <= states(pricepoint)|float }}"
-        - "{{ price_threshold_active }}"
-
-
+        - "{{ price_threshold_active }}"p
+        
     sequence: !input below_actions
   - conditions:
     - condition: or
