@@ -64,9 +64,6 @@ mode: restart
 max_exceeded: silent
 trigger:
 - platform: state
-  alias: currentprice
-  entity_id: !input tibber_price_sensor
-- platform: state
   alias: price
   entity_id: !input tibber_price_sensor
   attribute: price_level
@@ -87,7 +84,7 @@ action:
     price_changed: "{{ trigger.alias == 'price' }}"
     price_level: "{{ state_attr(price,'price_level') }}"
     price_is_low: "{{ price_level in levels and levels.index(price_level) <= levels.index(price_threshold) }}"
-    price_is_below_threshold: "{{ states(currentprice)|float <= states(pricepoint)|float }}"
+    price_is_below_threshold: "{{ states(price)|float <= states(pricepoint)|float }}"
     thermostat: !input thermostat
     thermostat_changed: "{{ trigger.alias == 'thermostat' }}"
     pricepoint: !input pricepoint
