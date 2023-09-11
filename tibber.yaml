@@ -66,7 +66,6 @@ trigger:
 - platform: state
   alias: price
   entity_id: !input tibber_price_sensor
-  attribute: price_level
 - platform: state
   alias: thermostat
   entity_id: !input thermostat
@@ -123,8 +122,6 @@ action:
       - condition: and
         conditions: 
         - "{{ price_changed }}"
-        - "{{ levels.index(trigger.to_state.attributes.price_level) > levels.index(price_threshold) }}"
-        - "{{ levels.index(trigger.from_state.attributes.price_level) <= levels.index(price_threshold) }}"
         - "{{ temperature_is_low }}"
         - "{{ price_threshold_active }}"
       - condition: and
@@ -144,7 +141,7 @@ action:
         - "{{ pricepoint_changed }}"
         - "{{ trigger.to_state.state|float > states(pricepoint)|float }}"
         - "{{ trigger.from_state.state|float <= states(pricepoint)|float }}"
-        - "{{ price_threshold_active }}"p
+        - "{{ price_threshold_active }}"
         
     sequence: !input below_actions
   - conditions:
