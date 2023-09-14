@@ -92,6 +92,7 @@ action:
     temperature: !input temperature_sensor
     temperature_changed: "{{ trigger.alias == 'temperature' }}"
     temperature_is_low: "{{ states(temperature)|float < states(thermostat)|float }}"
+    temperature_is_high: "{{ states(temperature)|float >= states(thermostat)|float }}"
 - choose:
   - conditions:
     - condition: or
@@ -164,4 +165,32 @@ action:
         - "{{ trigger.to_state.state|float <= states(temperature)|float }}"
         - "{{ trigger.from_state.state|float > states(temperature) |float}}"
         - "{{ price_is_low }}"
+      - condition: and
+        conditions:
+        - "{{ price_changed }}"
+        - "{{ trigger.to_state.state|float > states(pricepoint)|float }}"
+        - "{{ trigger.from_state.state|float <= states(pricepoint)|float }}"
+        - "{{ temperature_is_low }}"
+        - "{{ price_is_high }}"
+      - condition: and
+        conditions:
+        - "{{ temperature_changed }}"
+        - "{{ trigger.to_state.state|float >= states(thermostat)|float }}"
+        - "{{ trigger.from_state.state|float < states(thermostat)|float }}"
+        - "{{ price_is_high }}"
+        - "{{ price_threshold_active }}"
+      - condition: and
+        conditions:
+        - "{{ thermostat_changed }}"
+        - "{{ trigger.to_state.state|float <= states(temperature)|float }}"
+        - "{{ trigger.from_state.state|float > states(temperature)|float }}"
+        - "{{ price_is_high }}"
+        - "{{ price_threshold_active }}"
+      - condition: and
+        conditions:
+        - "{{ pricepoint_changed }}"
+        - "{{ trigger.to_state.state|float > states(price)|float }}"
+        - "{{ trigger.from_state.state|float <= states(price)|float }}"
+        - "{{ temperature_is_low }}"
+        - "{{ price_is_high }}"
     sequence: !input above_actions
