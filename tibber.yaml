@@ -83,6 +83,7 @@ action:
     price_changed: "{{ trigger.alias == 'price' }}"
     price_level: "{{ state_attr(price,'price_level') }}"
     price_is_low: "{{ price_level in levels and levels.index(price_level) <= levels.index(price_threshold) }}"
+    price_is_high: "{{ price_level in levels and levels.index(price_level) > levels.index(price_threshold) }}"
     thermostat: !input thermostat
     thermostat_changed: "{{ trigger.alias == 'thermostat' }}"
     pricepoint: !input pricepoint
@@ -115,34 +116,32 @@ action:
         - "{{ price_is_low }}"
       - condition: and
         conditions:
-        - "{{ pricepoint_changed }}"
-        - "{{ trigger.to_state.state|float > states(pricepoint)|float }}"
-        - "{{ trigger.from_state.state|float <= states(pricepoint)|float }}"
-        - "{{ price_is_low }}"
-      - condition: and
-        conditions: 
         - "{{ price_changed }}"
+        - "{{ trigger.to_state.state|float >= states(pricepoint)|float }}"
+        - "{{ trigger.from_state.state|float < states(pricepoint)|float }}"
         - "{{ temperature_is_low }}"
-        - "{{ price_threshold_active }}"
+        - "{{ price_is_high }}"
       - condition: and
         conditions:
         - "{{ temperature_changed }}"
         - "{{ trigger.to_state.state|float < states(thermostat)|float }}"
         - "{{ trigger.from_state.state|float >= states(thermostat)|float }}"
+        - "{{ price_is_high }}"
         - "{{ price_threshold_active }}"
       - condition: and
         conditions:
         - "{{ thermostat_changed }}"
         - "{{ trigger.to_state.state|float > states(temperature)|float }}"
         - "{{ trigger.from_state.state|float <= states(temperature)|float }}"
+        - "{{ price_is_high }}"
         - "{{ price_threshold_active }}"
       - condition: and
         conditions:
         - "{{ pricepoint_changed }}"
-        - "{{ trigger.to_state.state|float > states(pricepoint)|float }}"
-        - "{{ trigger.from_state.state|float <= states(pricepoint)|float }}"
-        - "{{ price_threshold_active }}"
-        
+        - "{{ trigger.to_state.state|float <= states(price)|float }}"
+        - "{{ trigger.from_state.state|float > states(price)|float }}"
+        - "{{ temperature_is_low }}"
+        - "{{ price_is_high }}"
     sequence: !input below_actions
   - conditions:
     - condition: or

@@ -85,43 +85,43 @@ action:
     - condition: or
       conditions: 
       - condition: and
-        conditions: 
-        - "{{ price_changed }}"
-        - "{{ levels.index(trigger.to_state.attributes.price_level) <= levels.index(price_threshold) }}"
-        - "{{ levels.index(trigger.from_state.attributes.price_level) > levels.index(price_threshold) }}"
-        - "{{ temperature_is_low }}"
+        conditions:         
+        - "{{ price_changed }}"                                                                           #Priset har ändrats
+        - "{{ levels.index(trigger.to_state.attributes.price_level) <= levels.index(price_threshold) }}"  #Prisnivå i tibber går till en nivå som är lika med eller mindre än inställd prisnivå
+        - "{{ levels.index(trigger.from_state.attributes.price_level) > levels.index(price_threshold) }}" #Prisnivå i tibber går från en nivå som är störra än inställd prisnivå
+        - "{{ temperature_is_low }}"                                                                      #Temperaturen i rummet är lägre än inställd starttemp
       - condition: and
         conditions:
-        - "{{ temperature_changed }}"
-        - "{{ trigger.to_state.state|float < states(thermostat)|float }}"
-        - "{{ trigger.from_state.state|float >= states(thermostat)|float }}"
-        - "{{ price_is_low }}"
+        - "{{ temperature_changed }}"                                                                     #Temperaturen i rummet har ändrats
+        - "{{ trigger.to_state.state|float < states(thermostat)|float }}"                                 #Temperaturen går till en nivå som är < inställd starttemp
+        - "{{ trigger.from_state.state|float >= states(thermostat)|float }}"                              #Temperaturen går från en nivå som är >= inställd starttemp
+        - "{{ price_is_low }}"                                                                            #Priset är lågt
       - condition: and
         conditions:
-        - "{{ thermostat_changed }}"
-        - "{{ trigger.to_state.state|float > states(temperature)|float }}"
-        - "{{ trigger.from_state.state|float <= states(temperature)|float }}"
-        - "{{ price_is_low }}"
+        - "{{ thermostat_changed }}"                                                                      #Termostaten har ändrats
+        - "{{ trigger.to_state.state|float > states(temperature)|float }}"                                #Termostaten går till en ett värde som är > rummets temp
+        - "{{ trigger.from_state.state|float <= states(temperature)|float }}"                             #Termostaten går från en inställn som <= eller lika med temperaturen i rummet
+        - "{{ price_is_low }}"                                                                            #Priset är lågt
     sequence: !input below_actions
   - conditions:
     - condition: or
       conditions: 
       - condition: and
         conditions: 
-        - "{{ price_changed }}"
-        - "{{ levels.index(trigger.to_state.attributes.price_level) > levels.index(price_threshold) }}"
-        - "{{ levels.index(trigger.from_state.attributes.price_level) <= levels.index(price_threshold) }}"
-        - "{{ temperature_is_low }}"
+        - "{{ price_changed }}"                                                                             #Priset har ändrats
+        - "{{ levels.index(trigger.to_state.attributes.price_level) > levels.index(price_threshold) }}"     #Prisnåivå i tibber går till en nivå som > inställd prisnivå
+        - "{{ levels.index(trigger.from_state.attributes.price_level) <= levels.index(price_threshold) }}"  #Prisnåivå i tibber går från en nivå <= inställd prisnivå
+        - "{{ temperature_is_low }}"                                                                        #Temperaturen är låg
       - condition: and
         conditions:
-        - "{{ temperature_changed }}"
-        - "{{ trigger.to_state.state|float >= states(thermostat)|float }}"
-        - "{{ trigger.from_state.state|float < states(thermostat)|float }}"
-        - "{{ price_is_low }}"
+        - "{{ temperature_changed }}"                                                                       #Temperaturen har ändrats i rummet
+        - "{{ trigger.to_state.state|float >= states(thermostat)|float }}"                                  #Temperaturen går till ett värde som är >= inställd temperatur
+        - "{{ trigger.from_state.state|float < states(thermostat)|float }}"                                 #Temperaturen går från ett värde som är < inställd temperatur
+        - "{{ price_is_low }}"                                                                              #Priset är lågt
       - condition: and
         conditions:
-        - "{{ thermostat_changed }}"
-        - "{{ trigger.to_state.state|float <= states(temperature)|float }}"
-        - "{{ trigger.from_state.state|float > states(temperature) |float}}"
-        - "{{ price_is_low }}"
+        - "{{ thermostat_changed }}"                                                                        #Termostaten har ändrats
+        - "{{ trigger.to_state.state|float <= states(temperature)|float }}"                                 #Termostaten går till ett värde som är <= rummets temperatur
+        - "{{ trigger.from_state.state|float > states(temperature) |float}}"                                #Termostaten går från ett värde som är > rummets temp
+        - "{{ price_is_low }}"                                                                              #Priset är lågt
     sequence: !input above_actions
