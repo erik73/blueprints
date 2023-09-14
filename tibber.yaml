@@ -185,7 +185,6 @@ action:
         - "{{ trigger.to_state.state|float <= states(temperature)|float }}"
         - "{{ trigger.from_state.state|float > states(temperature)|float }}"
         - "{{ price_is_high }}"
-        - "{{ price_threshold_active }}"
       - condition: and
         conditions:
         - "{{ pricepoint_changed }}"
