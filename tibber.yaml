@@ -1,10 +1,10 @@
 blueprint:
-  name: Tibber price and thermostat control with price threshold
+  name: Tibber price and thermostat control with pricepoint threshold
   description: >
     Trigger actions (e.g. toggle HVAC) depending on temperature and electricity price. Actions are triggered *intelligently* when price, temperature or thermostat setting change.
 
 
-    First create two numeric helpers for thermostat control and price control to set the threshold.
+    First create two numeric helpers for thermostat control and pricepoint for when to concider prices low.
   domain: automation
   input:
     tibber_price_sensor:
@@ -49,7 +49,7 @@ blueprint:
           - label: Very cheap
             value: VERY_CHEAP
     below_actions:
-      name: Low prices and temperature below thermostat setting
+      name: Low prices (below price threshold or below pricepoint) and temperature below thermostat setting
       description: Actions to perform.
       default: []
       selector:
@@ -92,7 +92,6 @@ action:
     temperature: !input temperature_sensor
     temperature_changed: "{{ trigger.alias == 'temperature' }}"
     temperature_is_low: "{{ states(temperature)|float < states(thermostat)|float }}"
-    temperature_is_high: "{{ states(temperature)|float >= states(thermostat)|float }}"
 - choose:
   - conditions:
     - condition: or
