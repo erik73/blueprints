@@ -118,8 +118,7 @@ action:
       - condition: and
         conditions:
         - "{{ price_changed }}"
-        - "{{ trigger.to_state.state|float >= states(pricepoint)|float }}"
-        - "{{ trigger.from_state.state|float < states(pricepoint)|float }}"
+        - "{{ pricepoint_below_price }}"
         - "{{ temperature_is_low }}"
         - "{{ price_level_is_high }}"
       - condition: and
