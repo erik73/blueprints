@@ -138,8 +138,8 @@ action:
       - condition: and
         conditions:
         - "{{ pricepoint_changed }}"
-        - "{{ trigger.to_state.state|float <= states(price)|float }}"
-        - "{{ trigger.from_state.state|float > states(price)|float }}"
+        - "{{ trigger.to_state.state|float >= states(price)|float }}"
+        - "{{ trigger.from_state.state|float < states(price)|float }}"
         - "{{ temperature_is_low }}"
         - "{{ price_is_high }}"
     sequence: !input below_actions
@@ -187,8 +187,8 @@ action:
       - condition: and
         conditions:
         - "{{ pricepoint_changed }}"
-        - "{{ trigger.to_state.state|float > states(price)|float }}"
-        - "{{ trigger.from_state.state|float <= states(price)|float }}"
+        - "{{ trigger.to_state.state|float <= states(price)|float }}"
+        - "{{ trigger.from_state.state|float > states(price)|float }}"
         - "{{ temperature_is_low }}"
         - "{{ price_is_high }}"
     sequence: !input above_actions
