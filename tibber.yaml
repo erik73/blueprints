@@ -88,7 +88,8 @@ action:
     thermostat_changed: "{{ trigger.alias == 'thermostat' }}"
     pricepoint: !input pricepoint
     pricepoint_changed: "{{ trigger.alias == 'pricepoint' }}"
-    price_threshold_active: "{{ states(pricepoint)|float >= states(price)|float }}"
+    pricepoint_above_price: "{{ states(pricepoint)|float >= states(price)|float }}"
+    pricepoint_below_price: "{{ states(pricepoint)|float < states(price)|float }}"
     temperature: !input temperature_sensor
     temperature_changed: "{{ trigger.alias == 'temperature' }}"
     temperature_is_low: "{{ states(temperature)|float < states(thermostat)|float }}"
@@ -127,14 +128,14 @@ action:
         - "{{ trigger.to_state.state|float < states(thermostat)|float }}"
         - "{{ trigger.from_state.state|float >= states(thermostat)|float }}"
         - "{{ price_level_is_high }}"
-        - "{{ price_threshold_active }}"
+        - "{{ pricepoint_above_price }}"
       - condition: and
         conditions:
         - "{{ thermostat_changed }}"
         - "{{ trigger.to_state.state|float > states(temperature)|float }}"
         - "{{ trigger.from_state.state|float <= states(temperature)|float }}"
         - "{{ price_level_is_high }}"
-        - "{{ price_threshold_active }}"
+        - "{{ pricepoint_above_price }}"
       - condition: and
         conditions:
         - "{{ pricepoint_changed }}"
@@ -152,6 +153,7 @@ action:
         - "{{ levels.index(trigger.to_state.attributes.price_level) > levels.index(price_threshold) }}"
         - "{{ levels.index(trigger.from_state.attributes.price_level) <= levels.index(price_threshold) }}"
         - "{{ temperature_is_low }}"
+        - "{{ pricepoint_below_price }}"
       - condition: and
         conditions:
         - "{{ temperature_changed }}"
@@ -177,7 +179,7 @@ action:
         - "{{ trigger.to_state.state|float >= states(thermostat)|float }}"
         - "{{ trigger.from_state.state|float < states(thermostat)|float }}"
         - "{{ price_level_is_high }}"
-        - "{{ price_threshold_active }}"
+        - "{{ pricepoint_above_price }}"
       - condition: and
         conditions:
         - "{{ thermostat_changed }}"
