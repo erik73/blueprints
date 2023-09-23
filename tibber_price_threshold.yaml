@@ -1,0 +1,58 @@
+blueprint:
+  name: Tibber price control
+  description: Perform actions when electricity prices go above or below a selected threshold.
+  domain: automation
+  input:
+    tibber_price_sensor:
+      name: Tibber price sensor
+      selector:
+        entity:
+          domain: sensor
+    threshold:
+      name: Threshold
+      description: When to consider prices low.
+      default: "CHEAP"
+      selector:
+        select:
+          options:
+            - label: Very expensive
+              value: VERY_EXPENSIVE
+            - label: Expensive
+              value: EXPENSIVE
+            - label: Normal
+              value: NORMAL
+            - label: Cheap
+              value: CHEAP
+            - label: Very cheap
+              value: VERY_CHEAP
+    below_actions:
+      name: Low prices
+      description: Actions to perform when prices become low.
+      default: []
+      selector:
+        action: {}
+    above_actions:
+      name: High prices
+      description: Actions to perform when prices become high.
+      default: []
+      selector:
+        action: {}
+mode: restart
+max_exceeded: silent
+trigger:
+  - platform: state
+    entity_id: !input tibber_price_sensor
+    attribute: price_level
+action:
+- variables:
+    levels: "{{ ['VERY_CHEAP','CHEAP','NORMAL','EXPENSIVE','VERY_EXPENSIVE'] }}"
+    old_level: "{{ trigger.from_state.attributes.price_level }}"
+    new_level: "{{ trigger.to_state.attributes.price_level }}"
+    threshold: !input threshold
+- choose:
+  - conditions:
+    - "{{ levels.index(new_level) <=  levels.index(threshold) and levels.index(old_level) >  levels.index(threshold)}}"
+    sequence: !input below_actions
+  - conditions:
+    - "{{ levels.index(old_level) <=  levels.index(threshold) and levels.index(new_level) >  levels.index(threshold)}}"
+    sequence: !input above_actions
