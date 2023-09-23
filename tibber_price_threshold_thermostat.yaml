@@ -1,0 +1,196 @@
+blueprint:
+  name: Tibber price and thermostat control with pricepoint threshold
+  description: >
+    Trigger actions (e.g. toggle HVAC) depending on temperature and electricity price. Actions are triggered *intelligently* when price, temperature or thermostat setting change.
+
+
+    First create two numeric helpers for thermostat control and pricepoint for when to concider prices low.
+  domain: automation
+  input:
+    tibber_price_sensor:
+      name: Tibber price sensor
+      selector:
+        entity:
+          domain: sensor
+    temperature_sensor:
+      name: Thermostat sensor
+      description: Temperature sensor.
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    thermostat:
+      name: Thermostat setting
+      description: Numeric helper entity.
+      selector:
+        entity:
+          domain: input_number
+    pricepoint:
+      name: Pricepoint setting
+      description: Numeric helper entity.
+      selector:
+        entity:
+          domain: input_number
+    price_threshold:
+      name: Electricity price threshold
+      description: When to consider prices low. (Tibber price level)
+      default: "CHEAP"
+      selector:
+        select:
+          options:
+          - label: Very expensive
+            value: VERY_EXPENSIVE
+          - label: Expensive
+            value: EXPENSIVE
+          - label: Normal
+            value: NORMAL
+          - label: Cheap
+            value: CHEAP
+          - label: Very cheap
+            value: VERY_CHEAP
+    below_actions:
+      name: Low prices (below price threshold or below pricepoint) and temperature below thermostat setting
+      description: Actions to perform.
+      default: []
+      selector:
+        action: {}
+    above_actions:
+      name: High prices or temperature above thermostat setting
+      description: Actions to perform.
+      default: []
+      selector:
+        action: {}
+mode: restart
+max_exceeded: silent
+trigger:
+- platform: state
+  alias: price
+  entity_id: !input tibber_price_sensor
+- platform: state
+  alias: thermostat
+  entity_id: !input thermostat
+- platform: state
+  alias: pricepoint
+  entity_id: !input pricepoint
+- platform: state
+  alias: temperature
+  entity_id: !input temperature_sensor
+action:
+- variables:
+    levels: "{{ ['VERY_CHEAP','CHEAP','NORMAL','EXPENSIVE','VERY_EXPENSIVE'] }}"
+    price: !input tibber_price_sensor
+    price_threshold: !input price_threshold
+    price_changed: "{{ trigger.alias == 'price' }}"
+    price_level: "{{ state_attr(price,'price_level') }}"
+    price_level_is_low: "{{ price_level in levels and levels.index(price_level) <= levels.index(price_threshold) }}"
+    price_level_is_high: "{{ price_level in levels and levels.index(price_level) > levels.index(price_threshold) }}"
+    thermostat: !input thermostat
+    thermostat_changed: "{{ trigger.alias == 'thermostat' }}"
+    pricepoint: !input pricepoint
+    pricepoint_changed: "{{ trigger.alias == 'pricepoint' }}"
+    pricepoint_above_price: "{{ states(pricepoint)|float >= states(price)|float }}"
+    pricepoint_below_price: "{{ states(pricepoint)|float < states(price)|float }}"
+    temperature: !input temperature_sensor
+    temperature_changed: "{{ trigger.alias == 'temperature' }}"
+    temperature_is_low: "{{ states(temperature)|float < states(thermostat)|float }}"
+- choose:
+  - conditions:
+    - condition: or
+      conditions: 
+      - condition: and
+        conditions: 
+        - "{{ price_changed }}"
+        - "{{ levels.index(trigger.to_state.attributes.price_level) <= levels.index(price_threshold) }}"
+        - "{{ levels.index(trigger.from_state.attributes.price_level) > levels.index(price_threshold) }}"
+        - "{{ temperature_is_low }}"
+      - condition: and
+        conditions:
+        - "{{ temperature_changed }}"
+        - "{{ trigger.to_state.state|float < states(thermostat)|float }}"
+        - "{{ trigger.from_state.state|float >= states(thermostat)|float }}"
+        - "{{ price_level_is_low }}"
+      - condition: and
+        conditions:
+        - "{{ thermostat_changed }}"
+        - "{{ trigger.to_state.state|float > states(temperature)|float }}"
+        - "{{ trigger.from_state.state|float <= states(temperature)|float }}"
+        - "{{ price_level_is_low }}"
+      - condition: and
+        conditions:
+        - "{{ price_changed }}"
+        - "{{ trigger.to_state.state|float <= states(pricepoint)|float }}"
+        - "{{ trigger.from_state.state|float > states(pricepoint)|float }}"
+        - "{{ temperature_is_low }}"
+        - "{{ price_level_is_high }}"
+      - condition: and
+        conditions:
+        - "{{ temperature_changed }}"
+        - "{{ trigger.to_state.state|float < states(thermostat)|float }}"
+        - "{{ trigger.from_state.state|float >= states(thermostat)|float }}"
+        - "{{ price_level_is_high }}"
+        - "{{ pricepoint_above_price }}"
+      - condition: and
+        conditions:
+        - "{{ thermostat_changed }}"
+        - "{{ trigger.to_state.state|float > states(temperature)|float }}"
+        - "{{ trigger.from_state.state|float <= states(temperature)|float }}"
+        - "{{ price_level_is_high }}"
+        - "{{ pricepoint_above_price }}"
+      - condition: and
+        conditions:
+        - "{{ pricepoint_changed }}"
+        - "{{ trigger.to_state.state|float >= states(price)|float }}"
+        - "{{ trigger.from_state.state|float < states(price)|float }}"
+        - "{{ temperature_is_low }}"
+        - "{{ price_level_is_high }}"
+    sequence: !input below_actions
+  - conditions:
+    - condition: or
+      conditions: 
+      - condition: and
+        conditions: 
+        - "{{ price_changed }}"
+        - "{{ levels.index(trigger.to_state.attributes.price_level) > levels.index(price_threshold) }}"
+        - "{{ levels.index(trigger.from_state.attributes.price_level) <= levels.index(price_threshold) }}"
+        - "{{ temperature_is_low }}"
+        - "{{ pricepoint_below_price }}"
+      - condition: and
+        conditions:
+        - "{{ temperature_changed }}"
+        - "{{ trigger.to_state.state|float >= states(thermostat)|float }}"
+        - "{{ trigger.from_state.state|float < states(thermostat)|float }}"
+        - "{{ price_level_is_low }}"
+      - condition: and
+        conditions:
+        - "{{ thermostat_changed }}"
+        - "{{ trigger.to_state.state|float <= states(temperature)|float }}"
+        - "{{ trigger.from_state.state|float > states(temperature) |float}}"
+        - "{{ price_level_is_low }}"
+      - condition: and
+        conditions:
+        - "{{ price_changed }}"
+        - "{{ trigger.to_state.state|float > states(pricepoint)|float }}"
+        - "{{ trigger.from_state.state|float <= states(pricepoint)|float }}"
+        - "{{ temperature_is_low }}"
+        - "{{ price_level_is_high }}"
+      - condition: and
+        conditions:
+        - "{{ temperature_changed }}"
+        - "{{ trigger.to_state.state|float >= states(thermostat)|float }}"
+        - "{{ trigger.from_state.state|float < states(thermostat)|float }}"
+        - "{{ price_level_is_high }}"
+        - "{{ pricepoint_above_price }}"
+      - condition: and
+        conditions:
+        - "{{ thermostat_changed }}"
+        - "{{ trigger.to_state.state|float <= states(temperature)|float }}"
+        - "{{ trigger.from_state.state|float > states(temperature)|float }}"
+        - "{{ price_level_is_high }}"
+      - condition: and
+        conditions:
+        - "{{ pricepoint_changed }}"
+        - "{{ trigger.to_state.state|float <= states(price)|float }}"
+        - "{{ trigger.from_state.state|float > states(price)|float }}"
+        - "{{ temperature_is_low }}"
+        - "{{ price_level_is_high }}"
+    sequence: !input above_actions
