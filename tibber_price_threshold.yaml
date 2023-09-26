@@ -1,6 +1,10 @@
 blueprint:
-  name: Tibber price control
-  description: Perform actions when electricity prices go above or below a selected threshold.
+  name: Tibber price and pricepoint threshold
+  description: >
+    Trigger actions (e.g. toggle HVAC) depending on electricity price. Actions are triggered *intelligently* when price, or pricepoint setting change.
+
+
+    First create a numeric helper for the pricepoint where to concider prices low, even if Tibber conciders the price high.
   domain: automation
   input:
     tibber_price_sensor:
@@ -8,51 +12,102 @@ blueprint:
       selector:
         entity:
           domain: sensor
-    threshold:
-      name: Threshold
-      description: When to consider prices low.
+    pricepoint:
+      name: Pricepoint setting
+      description: Numeric helper entity.
+      selector:
+        entity:
+          domain: input_number
+    price_threshold:
+      name: Electricity price threshold
+      description: When to consider prices low. (Tibber price level)
       default: "CHEAP"
       selector:
         select:
           options:
-            - label: Very expensive
-              value: VERY_EXPENSIVE
-            - label: Expensive
-              value: EXPENSIVE
-            - label: Normal
-              value: NORMAL
-            - label: Cheap
-              value: CHEAP
-            - label: Very cheap
-              value: VERY_CHEAP
+          - label: Very expensive
+            value: VERY_EXPENSIVE
+          - label: Expensive
+            value: EXPENSIVE
+          - label: Normal
+            value: NORMAL
+          - label: Cheap
+            value: CHEAP
+          - label: Very cheap
+            value: VERY_CHEAP
     below_actions:
-      name: Low prices
-      description: Actions to perform when prices become low.
+      name: Low prices (below price threshold or below pricepoint)
+      description: Actions to perform.
       default: []
       selector:
         action: {}
     above_actions:
       name: High prices
-      description: Actions to perform when prices become high.
+      description: Actions to perform.
       default: []
       selector:
         action: {}
 mode: restart
 max_exceeded: silent
 trigger:
-  - platform: state
-    entity_id: !input tibber_price_sensor
-    attribute: price_level
+- platform: state
+  alias: price
+  entity_id: !input tibber_price_sensor
+- platform: state
+  alias: pricepoint
+  entity_id: !input pricepoint
 action:
 - variables:
     levels: "{{ ['VERY_CHEAP','CHEAP','NORMAL','EXPENSIVE','VERY_EXPENSIVE'] }}"
-    old_level: "{{ trigger.from_state.attributes.price_level }}"
-    new_level: "{{ trigger.to_state.attributes.price_level }}"
-    threshold: !input threshold
+    price: !input tibber_price_sensor
+    price_threshold: !input price_threshold
+    price_changed: "{{ trigger.alias == 'price' }}"
+    price_level: "{{ state_attr(price,'price_level') }}"
+    price_level_is_high: "{{ price_level in levels and levels.index(price_level) > levels.index(price_threshold) }}"
+    pricepoint: !input pricepoint
+    pricepoint_changed: "{{ trigger.alias == 'pricepoint' }}"
+    pricepoint_below_price: "{{ states(pricepoint)|float < states(price)|float }}"
 - choose:
   - conditions:
-    - "{{ levels.index(new_level) <=  levels.index(threshold) and levels.index(old_level) >  levels.index(threshold)}}"
+    - condition: or
+      conditions: 
+      - condition: and
+        conditions: 
+        - "{{ price_changed }}"
+        - "{{ levels.index(trigger.to_state.attributes.price_level) <= levels.index(price_threshold) }}"
+        - "{{ levels.index(trigger.from_state.attributes.price_level) > levels.index(price_threshold) }}"
+      - condition: and
+        conditions:
+        - "{{ price_changed }}"
+        - "{{ trigger.to_state.state|float <= states(pricepoint)|float }}"
+        - "{{ trigger.from_state.state|float > states(pricepoint)|float }}"
+        - "{{ price_level_is_high }}"
+      - condition: and
+        conditions:
+        - "{{ pricepoint_changed }}"
+        - "{{ trigger.to_state.state|float >= states(price)|float }}"
+        - "{{ trigger.from_state.state|float < states(price)|float }}"
+        - "{{ price_level_is_high }}"
     sequence: !input below_actions
   - conditions:
-    - "{{ levels.index(old_level) <=  levels.index(threshold) and levels.index(new_level) >  levels.index(threshold)}}"
+    - condition: or
+      conditions: 
+      - condition: and
+        conditions: 
+        - "{{ price_changed }}"
+        - "{{ levels.index(trigger.to_state.attributes.price_level) > levels.index(price_threshold) }}"
+        - "{{ levels.index(trigger.from_state.attributes.price_level) <= levels.index(price_threshold) }}"
+        - "{{ pricepoint_below_price }}"
+      - condition: and
+        conditions:
+        - "{{ price_changed }}"
+        - "{{ trigger.to_state.state|float > states(pricepoint)|float }}"
+        - "{{ trigger.from_state.state|float <= states(pricepoint)|float }}"
+        - "{{ price_level_is_high }}"
+      - condition: and
+        conditions:
+        - "{{ pricepoint_changed }}"
+        - "{{ trigger.to_state.state|float <= states(price)|float }}"
+        - "{{ trigger.from_state.state|float > states(price)|float }}"
+        - "{{ price_level_is_high }}"
     sequence: !input above_actions
