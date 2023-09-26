@@ -4,7 +4,7 @@ blueprint:
     Trigger actions (e.g. toggle HVAC) depending on electricity price. Actions are triggered *intelligently* when price, or pricepoint setting change.
 
 
-    First create a numeric helper for the pricepoint where to concider prices low, even if Tibber conciders the price high.
+    First create a numeric helper for the pricepoint where to consider prices low, even if Tibber conciders the price high.
   domain: automation
   input:
     tibber_price_sensor:
